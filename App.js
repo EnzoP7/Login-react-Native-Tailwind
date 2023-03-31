@@ -1,20 +1,104 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+
+import { NavigationContainer } from "@react-navigation/native";
+import { createStackNavigator } from '@react-navigation/stack';
+import {onAuthStateChanged} from "firebase/auth"
+import { View, ActivityIndicator } from "react-native";
+
+import { async } from "@firebase/util";
+import { auth } from "./Config/firebase";
+
+import Login from './componentes/Screens/Login';
+import SingUp from './componentes/Screens/Singup';
+import Home from './componentes/Screens/Home';
+import { createContext, useContext, useEffect, useState } from 'react';
+const Stack = createStackNavigator();//Creamos Contexto
+const AuthenticatedUserContext = createContext({});
 
 export default function App() {
+
+  const LoginySingUp = () =>{
+    return (
+      <Stack.Navigator defaultScreenOptions={Login}
+       screenOptions={{headerShown:false}}
+      >
+
+          <Stack.Screen name='Login' component={Login}/>
+          <Stack.Screen name='SingUp' component={SingUp}/>
+      </Stack.Navigator>
+    );
+  }
+
+  const Ingresado = () =>{
+    return (
+      <Stack.Navigator defaultScreenOptions={Home}
+       screenOptions={{headerShown:false}}
+      >
+
+          <Stack.Screen name='Home' component={Home}/>
+          
+      </Stack.Navigator>
+    );
+  }
+
+//Creamos la funcion del Contexto
+
+  const AuthenticatedUserProvider = ({children}) =>{
+    const [user,setUser] = useState(null);
+    return(
+      <AuthenticatedUserContext.Provider value={{user,setUser}}>
+        {children}
+      </AuthenticatedUserContext.Provider>
+    );
+  };
+
+
+
+
+  const RootNavigator = () =>{
+      //Traemps el user y setuser del Contexto
+    const {user , setUser} = useContext(AuthenticatedUserContext);
+    //Creamos un Loading
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+     //Creamos constante y llamamos a onAuthStateChanged que se le manda la Auth que es la data de el firebase 
+     const unsubscribe = onAuthStateChanged(auth, async (AuthenticatedUser) => {
+      //si el  AuthenticatedUser existe entonces que lo guarde sino que lo marque nullo
+      AuthenticatedUser ? setUser(AuthenticatedUser) : setUser(null);
+      setLoading(false);
+    })
+  
+    return () => {
+       //Esto es para que se quite este componente, tambien se quite el useeffect y no se corra de mas
+      unsubscribe()
+    }
+  }, [user]);
+
+  if(loading) {
+    return(
+<View  style={{flex:1,justifyContent:"center",alignItems:"center"}}>
+<ActivityIndicator size="large" />
+</View>
+
+    )
+  }
+  return(
+    <NavigationContainer>
+{
+  user ? <Ingresado/> : <LoginySingUp/>
+}
+
+    </NavigationContainer>
+  )
+  
+
+  }
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+   
+
+   <AuthenticatedUserProvider>
+    <RootNavigator/>
+   </AuthenticatedUserProvider>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+
