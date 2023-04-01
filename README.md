@@ -12,6 +12,8 @@ npm install expo-constants dotenv
  npm install react-native-safe-area-context
  npm add @react-navigation/native-stack @react-navigation/native 
 
+npm install react-native-vector-icons
+npm install react-native-popup-menu
 
 
 para babel 
